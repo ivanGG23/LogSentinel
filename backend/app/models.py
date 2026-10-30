@@ -57,3 +57,12 @@ class Alert(Base):
     status: Mapped[str] = mapped_column(String(20), default="open")  # open | reviewed | false_positive
     event_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # hora del evento que la disparó
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class User(Base):
+    __tablename__ = "users"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
