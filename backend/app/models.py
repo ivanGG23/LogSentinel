@@ -34,13 +34,26 @@ class Event(Base):
     __table_args__ = (Index("ix_events_ip_time", "src_ip", "timestamp"),)
 
 
+class Rule(Base):
+    __tablename__ = "rules"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(50), unique=True)
+    description: Mapped[str] = mapped_column(Text)
+    threshold: Mapped[int]
+    window_seconds: Mapped[int]
+    severity: Mapped[str] = mapped_column(String(10))    # low | medium | high | critical
+    mitre: Mapped[str | None] = mapped_column(String(20))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
 class Alert(Base):
     __tablename__ = "alerts"
     id: Mapped[int] = mapped_column(primary_key=True)
     rule: Mapped[str] = mapped_column(String(50))
-    severity: Mapped[str] = mapped_column(String(10))    # low | medium | high | critical
+    severity: Mapped[str] = mapped_column(String(10))
     src_ip: Mapped[str] = mapped_column(String(45))
     mitre: Mapped[str | None] = mapped_column(String(20))
     description: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(20), default="open")  # open | reviewed | false_positive
+    event_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # hora del evento que la disparó
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

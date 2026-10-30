@@ -1,8 +1,9 @@
 from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 from sqlalchemy.orm import Session
-from .database import Base, engine, get_db
+from .database import Base, SessionLocal, engine, get_db
 from .models import Event, Source
+from .rules_engine import evaluate_event, seed_rules
 from .schemas import EventIn
 from .security import get_source
 
@@ -10,6 +11,8 @@ from .security import get_source
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
+    with SessionLocal() as db:
+        seed_rules(db)
     yield
 
 
@@ -30,4 +33,5 @@ def create_event(
     row = Event(**event.model_dump(), source_id=source.id, source=source.type)
     db.add(row)
     db.commit()
+    evaluate_event(db, row)
     return {"id": row.id}
