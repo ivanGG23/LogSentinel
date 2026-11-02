@@ -9,12 +9,14 @@ import urllib.request
 
 
 def send(event, api_url, api_key):
+    if not api_url.startswith(("http://", "https://")):
+        raise ValueError("API_URL debe empezar con http:// o https://")
     data = json.dumps(event).encode()
     req = urllib.request.Request(
         f"{api_url}/events", data=data, method="POST",
         headers={"Content-Type": "application/json", "X-API-Key": api_key})
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310 - esquema validado arriba
             return resp.status
     except urllib.error.HTTPError as e:
         return e.code

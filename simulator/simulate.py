@@ -7,7 +7,7 @@ comprueba, con GET /alerts, que salieron las alertas esperadas y ninguna extra.
 import getpass
 import json
 import os
-import random
+import secrets
 import sys
 import urllib.error
 import urllib.request
@@ -15,8 +15,9 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
 API = os.environ.get("API_URL", "http://localhost:8000").rstrip("/")
-if urlparse(API).hostname not in ("localhost", "127.0.0.1", "::1"):
-    sys.exit("Por seguridad, el simulador solo corre contra localhost.")
+if (urlparse(API).hostname not in ("localhost", "127.0.0.1", "::1")
+        or urlparse(API).scheme not in ("http", "https")):
+    sys.exit("Por seguridad, el simulador solo corre contra localhost por http/https.")
 
 KEYS = {t: os.environ.get(f"SIM_{t.upper()}_KEY") for t in ("ssh", "web", "nginx")}
 faltan = [f"SIM_{t.upper()}_KEY" for t, k in KEYS.items() if not k]
@@ -29,7 +30,7 @@ def call(method, path, body=None, headers=None):
     h = {"Content-Type": "application/json", **(headers or {})}
     req = urllib.request.Request(API + path, data=data, method=method, headers=h)
     try:
-        with urllib.request.urlopen(req, timeout=10) as r:
+        with urllib.request.urlopen(req, timeout=10) as r:  # nosec B310 - esquema validado arriba
             raw = r.read()
             return r.status, (json.loads(raw) if raw else None)
     except urllib.error.HTTPError as e:
@@ -44,7 +45,7 @@ _usadas = set()
 def nueva_ip(prefijo):
     """IP aleatoria de un rango de documentación (RFC 5737), distinta en cada escenario."""
     while True:
-        ip = f"{prefijo}.{random.randint(100, 250)}"
+        ip = f"{prefijo}.{100 + secrets.randbelow(151)}"
         if ip not in _usadas:
             _usadas.add(ip)
             return ip

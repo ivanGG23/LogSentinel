@@ -1,0 +1,61 @@
+Run started:2026-11-02 06:13:17.067615
+
+Test results:
+>> Issue: [B310:blacklist] Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.
+   Severity: Medium   Confidence: High
+   CWE: CWE-22 (https://cwe.mitre.org/data/definitions/22.html)
+   More Info: https://bandit.readthedocs.io/en/1.7.10/blacklists/blacklist_calls.html#b310-urllib-urlopen
+   Location: agents/common.py:17:13
+16	    try:
+17	        with urllib.request.urlopen(req, timeout=10) as resp:
+18	            return resp.status
+
+--------------------------------------------------
+>> Issue: [B310:blacklist] Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.
+   Severity: Medium   Confidence: High
+   CWE: CWE-22 (https://cwe.mitre.org/data/definitions/22.html)
+   More Info: https://bandit.readthedocs.io/en/1.7.10/blacklists/blacklist_calls.html#b310-urllib-urlopen
+   Location: agents/ssh_agent.py:70:13
+69	    try:
+70	        with urllib.request.urlopen(req, timeout=10) as resp:
+71	            return resp.status
+
+--------------------------------------------------
+>> Issue: [B310:blacklist] Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.
+   Severity: Medium   Confidence: High
+   CWE: CWE-22 (https://cwe.mitre.org/data/definitions/22.html)
+   More Info: https://bandit.readthedocs.io/en/1.7.10/blacklists/blacklist_calls.html#b310-urllib-urlopen
+   Location: simulator/simulate.py:32:13
+31	    try:
+32	        with urllib.request.urlopen(req, timeout=10) as r:
+33	            raw = r.read()
+
+--------------------------------------------------
+>> Issue: [B311:blacklist] Standard pseudo-random generators are not suitable for security/cryptographic purposes.
+   Severity: Low   Confidence: High
+   CWE: CWE-330 (https://cwe.mitre.org/data/definitions/330.html)
+   More Info: https://bandit.readthedocs.io/en/1.7.10/blacklists/blacklist_calls.html#b311-random
+   Location: simulator/simulate.py:47:26
+46	    while True:
+47	        ip = f"{prefijo}.{random.randint(100, 250)}"
+48	        if ip not in _usadas:
+
+--------------------------------------------------
+
+Code scanned:
+	Total lines of code: 875
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 1
+		Medium: 3
+		High: 0
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 0
+		Medium: 0
+		High: 4
+Files skipped (0):
