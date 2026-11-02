@@ -32,6 +32,9 @@ DEFAULT_RULES = [
     dict(name="path_traversal",
          description="Patrones de path traversal en la URL",
          threshold=1, window_seconds=300, severity="high", mitre="T1190"),
+    dict(name="coordinated_attack",
+         description="Una misma IP genera alertas en varias fuentes (SSH, web, Nginx)",
+         threshold=2, window_seconds=1800, severity="critical", mitre="N/A"),
 ]
 
 SENSITIVE_PATHS = (
@@ -205,6 +208,44 @@ def _evaluate_http(db: Session, event: Event, rules: dict) -> None:
                           severity=_injection_severity(rule, code))
 
 
+# ---------- Correlación entre fuentes ----------
+
+LOGIN_RULES = {"brute_force", "password_spraying", "compromised_login"}
+WEB_RULES = {"scan_404", "sensitive_paths", "sqli", "xss", "path_traversal"}
+
+
+def _sources_of(db: Session, ip, event_type: str, since, ts) -> set:
+    return set(db.scalars(
+        select(Event.source).where(
+            Event.src_ip == ip, Event.event_type == event_type,
+            Event.timestamp >= since, Event.timestamp <= ts).distinct()))
+
+
+def _evaluate_correlation(db: Session, event: Event, rules: dict) -> None:
+    rule = rules.get("coordinated_attack")
+    if not rule:
+        return
+    ip, ts = event.src_ip, event.timestamp
+    since = ts - timedelta(seconds=rule.window_seconds)
+
+    fired = set(db.scalars(
+        select(Alert.rule).where(
+            Alert.src_ip == ip, Alert.event_time >= since,
+            Alert.rule != rule.name).distinct()))
+
+    sources = set()
+    if fired & LOGIN_RULES:
+        sources |= _sources_of(db, ip, "login", since, ts)
+    if fired & WEB_RULES:
+        sources |= _sources_of(db, ip, "http_request", since, ts)
+
+    if len(sources) >= rule.threshold:
+        _create_alert(db, rule, ip, ts,
+                      f"{ip} generó alertas en {len(sources)} fuentes distintas "
+                      f"({', '.join(sorted(sources))}) en {rule.window_seconds // 60} min: "
+                      f"{', '.join(sorted(fired))}")
+
+
 def evaluate_event(db: Session, event: Event) -> None:
     """Aplica las reglas activas a un evento recién guardado."""
     rules = {r.name: r for r in db.scalars(select(Rule).where(Rule.enabled.is_(True)))}
@@ -212,3 +253,4 @@ def evaluate_event(db: Session, event: Event) -> None:
         _evaluate_login(db, event, rules)
     elif event.event_type == "http_request":
         _evaluate_http(db, event, rules)
+    _evaluate_correlation(db, event, rules)
