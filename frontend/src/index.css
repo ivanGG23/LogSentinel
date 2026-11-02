@@ -1,0 +1,43 @@
+:root { color-scheme: dark; font-family: system-ui, sans-serif; }
+body { margin: 0; background: #0f172a; color: #e2e8f0; }
+h1 { margin: 0; font-size: 1.5rem; }
+h2 { font-size: 1.05rem; margin: 0 0 .5rem; }
+.muted { color: #94a3b8; }
+.error { color: #fca5a5; }
+button { background: #38bdf8; color: #0f172a; border: 0; border-radius: 6px;
+         padding: .4rem .7rem; font-weight: 600; cursor: pointer; }
+button.ghost { background: transparent; color: #e2e8f0; border: 1px solid #475569; }
+button:disabled { opacity: .6; cursor: wait; }
+input, select { background: #1e293b; color: #e2e8f0; border: 1px solid #475569;
+                border-radius: 6px; padding: .4rem .6rem; }
+
+.login { max-width: 320px; margin: 12vh auto; padding: 0 16px; }
+.login form { display: grid; gap: .8rem; margin-top: 1rem; }
+.login label { display: grid; gap: .25rem; font-size: .9rem; }
+
+.dash { max-width: 1200px; margin: 0 auto; padding: 16px; }
+.dash header { display: flex; justify-content: space-between; align-items: center;
+               flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+.actions { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
+.inline { display: flex; gap: .35rem; align-items: center; font-size: .9rem; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+         gap: .75rem; margin-bottom: 1rem; }
+.card { background: #1e293b; border-radius: 8px; padding: .8rem; display: grid; }
+.card .num { font-size: 1.8rem; font-weight: 700; }
+.chart { background: #1e293b; border-radius: 8px; padding: .8rem; margin-bottom: 1rem; }
+.filters { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: .75rem; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+th, td { text-align: left; padding: .5rem; border-bottom: 1px solid #334155; vertical-align: top; }
+td.desc { max-width: 380px; overflow-wrap: anywhere; }
+.row-actions { display: flex; gap: .3rem; flex-wrap: wrap; }
+
+.sev { display: inline-block; padding: .1rem .5rem; border-radius: 999px;
+       background: #334155; font-size: .8rem; }
+.sev-critical { background: #7f1d1d; color: #fecaca; }
+.sev-high { background: #9a3412; color: #fed7aa; }
+.sev-medium { background: #854d0e; color: #fef08a; }
+.sev-low { background: #1e3a8a; color: #bfdbfe; }
+.card.sev-critical, .card.sev-high, .card.sev-medium, .card.sev-low { border-radius: 8px; }
