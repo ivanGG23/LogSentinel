@@ -1,3 +1,5 @@
+import os
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Query
@@ -25,6 +27,16 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="LogSentinel", lifespan=lifespan)
+
+
+# CORS: solo el origen del dashboard (configurable con CORS_ORIGINS, separados por coma)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.environ.get(
+        "CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(","),
+    allow_methods=["GET", "POST", "PATCH"],
+    allow_headers=["Authorization", "Content-Type"],
+)
 
 
 @app.get("/health")
