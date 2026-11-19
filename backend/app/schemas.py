@@ -18,7 +18,7 @@ class EventIn(BaseModel):
     @field_validator("src_ip")
     @classmethod
     def valid_ip(cls, v: str) -> str:
-        ipaddress.ip_address(v)  # lanza error si no es una IP válida
+        ipaddress.ip_address(v)
         return v
 
 

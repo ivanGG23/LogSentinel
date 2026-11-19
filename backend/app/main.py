@@ -29,7 +29,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="LogSentinel", lifespan=lifespan)
 
 
-# CORS: solo el origen del dashboard (configurable con CORS_ORIGINS, separados por coma)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.environ.get(
