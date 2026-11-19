@@ -68,7 +68,6 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 def authenticate(db: Session, username: str, password: str) -> User | None:
     user = db.scalar(select(User).where(User.username == username, User.active.is_(True)))
-    # Siempre se verifica un hash, para que el tiempo no revele si el usuario existe
     ok = verify_password(password, user.password_hash if user else _DUMMY_HASH)
     return user if (user is not None and ok) else None
 
@@ -98,7 +97,7 @@ def get_current_user(
         payload = jwt.decode(
             creds.credentials,
             JWT_SECRET,
-            algorithms=[JWT_ALGORITHM],          # algoritmo fijado explícitamente
+            algorithms=[JWT_ALGORITHM],
             options={"require": ["exp", "sub"]},
         )
     except jwt.PyJWTError:

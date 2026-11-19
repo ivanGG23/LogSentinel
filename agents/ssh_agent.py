@@ -67,7 +67,7 @@ def send(event, api_url, api_key):
         f"{api_url}/events", data=data, method="POST",
         headers={"Content-Type": "application/json", "X-API-Key": api_key})
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310 - API_URL la define el operador
             return resp.status
     except urllib.error.HTTPError as e:
         return e.code
