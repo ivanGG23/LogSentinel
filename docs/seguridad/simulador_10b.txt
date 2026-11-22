@@ -1,0 +1,13 @@
+Usuario analista: 
+Simulando contra http://localhost:8000
+
+PASA   1. Tráfico normal (sin alertas)        198.51.100.189   alertas: -
+PASA   2. Fuerza bruta (SSH)                  203.0.113.185    alertas: brute_force
+PASA   3. Password spraying (web)             203.0.113.156    alertas: password_spraying
+PASA   4. Login comprometido (web)            203.0.113.195    alertas: brute_force, compromised_login
+PASA   5. Escaneo de rutas (404)              203.0.113.136    alertas: scan_404
+PASA   6. Rutas sensibles                     203.0.113.176    alertas: sensitive_paths
+PASA   7. SQLi + XSS + path traversal         203.0.113.248    alertas: path_traversal, sqli, xss
+PASA   8. Ataque coordinado (SSH + Nginx)     203.0.113.127    alertas: brute_force, coordinated_attack, sensitive_paths
+
+Todos los escenarios pasaron.

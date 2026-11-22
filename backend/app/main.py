@@ -2,12 +2,13 @@ import os
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .database import Base, SessionLocal, engine, get_db
 from .models import Alert, Event, Source
+from .ratelimit import RateLimitMiddleware, client_ip, login_ip_limiter, login_user_limiter
 from .rules_engine import evaluate_event, seed_rules
 from .schemas import AlertOut, AlertUpdate, EventIn, LoginIn, TokenOut
 from .security import (
@@ -28,6 +29,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="LogSentinel", lifespan=lifespan)
 
+
+# Límite general de peticiones. Se agrega ANTES que CORS para que CORS quede como capa
+# externa y las respuestas 429 también lleven sus cabeceras.
+app.add_middleware(RateLimitMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -61,10 +66,23 @@ def create_event(
 # ---------- Autenticación (dashboard) ----------
 
 @app.post("/auth/login", response_model=TokenOut)
-def login(data: LoginIn, db: Session = Depends(get_db)):
+def login(data: LoginIn, request: Request, db: Session = Depends(get_db)):
+    ip = client_ip(request)
+    user_key = data.username.strip().lower()
+    # El límite se revisa ANTES de verificar la contraseña (Argon2 es costoso)
+    wait = max(login_ip_limiter.retry_after(ip), login_user_limiter.retry_after(user_key))
+    if wait:
+        raise HTTPException(
+            status_code=429,
+            detail="Demasiados intentos fallidos. Intenta más tarde.",
+            headers={"Retry-After": str(wait)},
+        )
     user = authenticate(db, data.username, data.password)
     if user is None:
+        login_ip_limiter.add(ip)
+        login_user_limiter.add(user_key)
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
+    login_user_limiter.clear(user_key)
     return TokenOut(access_token=create_access_token(user.username))
 
 
