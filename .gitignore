@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 agents/.env.agent
 agents/.env.*
+proxy/certs/
+proxy/logs/
