@@ -16,6 +16,8 @@ export default function Login({ onLogin }: { onLogin: (token: string) => void })
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setError("Usuario o contraseña incorrectos");
+      } else if (err instanceof ApiError && err.status === 429) {
+        setError("Demasiados intentos fallidos. Espera unos minutos e intenta de nuevo.");
       } else {
         setError(err instanceof ApiError ? err.message : "Error inesperado");
       }

@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Simulador de ataques de LogSentinel. Solo corre contra localhost.
 
-Cada escenario usa una IP aleatoria propia, envía eventos a POST /events y luego
-comprueba, con GET /alerts, que salieron las alertas esperadas y ninguna extra.
+Cada escenario usa una IP propia que nunca haya generado alertas antes, envía eventos a
+POST /events y luego comprueba, con GET /alerts, que salieron las alertas esperadas y
+ninguna extra. Solo se consideran las alertas de ESTA corrida (por la hora del evento),
+así que se puede repetir las veces que se quiera.
 """
 import getpass
 import json
@@ -42,13 +44,35 @@ def call(method, path, body=None, headers=None):
 _usadas = set()
 
 
-def nueva_ip(prefijo):
-    """IP aleatoria de un rango de documentación (RFC 5737), distinta en cada escenario."""
-    while True:
-        ip = f"{prefijo}.{100 + secrets.randbelow(151)}"
-        if ip not in _usadas:
+def candidata(prefijo):
+    return f"{prefijo}.{100 + secrets.randbelow(151)}"
+
+
+def nueva_ip(prefijo, auth):
+    """IP aleatoria (rango de documentación, RFC 5737) que no haya generado alertas antes."""
+    for _ in range(100):
+        ip = candidata(prefijo)
+        if ip in _usadas:
+            continue
+        status, previas = call("GET", f"/alerts?src_ip={ip}&limit=1", headers=auth)
+        if status != 200:
+            sys.exit(f"GET /alerts falló (HTTP {status}).")
+        if not previas:
             _usadas.add(ip)
             return ip
+    sys.exit("No encontré una IP libre. Limpia la tabla con: TRUNCATE events, alerts RESTART IDENTITY;")
+
+
+def _hora(texto):
+    return datetime.fromisoformat(texto.replace("Z", "+00:00"))
+
+
+def alertas_de_la_corrida(auth, ip, desde):
+    """Reglas que dispararon alertas de esa IP con hora de evento posterior a `desde`."""
+    status, alertas = call("GET", f"/alerts?src_ip={ip}&limit=200", headers=auth)
+    if status != 200:
+        sys.exit(f"GET /alerts falló (HTTP {status}).")
+    return {a["rule"] for a in alertas if _hora(a["event_time"]) >= desde}
 
 
 class Out:
@@ -159,12 +183,10 @@ def main():
     print(f"\nSimulando contra {API}\n")
     todos_ok = True
     for nombre, prefijo, esperadas, permitidas, fn in SCENARIOS:
-        o = Out(nueva_ip(prefijo))
+        o = Out(nueva_ip(prefijo, auth))
+        desde = datetime.now(timezone.utc) - timedelta(minutes=5)
         fn(o)
-        status, alertas = call("GET", f"/alerts?src_ip={o.ip}&limit=200", headers=auth)
-        if status != 200:
-            sys.exit(f"GET /alerts falló (HTTP {status}).")
-        obtenidas = {a["rule"] for a in alertas}
+        obtenidas = alertas_de_la_corrida(auth, o.ip, desde)
         faltantes = esperadas - obtenidas
         extra = obtenidas - esperadas - permitidas
         ok = not faltantes and not extra and o.errores == 0
