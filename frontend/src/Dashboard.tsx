@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
@@ -27,6 +27,10 @@ export default function Dashboard({ token, onLogout }: { token: string; onLogout
   const [error, setError] = useState("");
   const [auto, setAuto] = useState(true);
   const [updated, setUpdated] = useState<Date | null>(null);
+  // Avisos rojos para alertas críticas nuevas
+  const seen = useRef<Set<number> | null>(null);
+  const [toasts, setToasts] = useState<Alert[]>([]);
+  const dismiss = (id: number) => setToasts((t) => t.filter((x) => x.id !== id));
 
   const handleError = useCallback((err: unknown) => {
     if (err instanceof ApiError && err.status === 401) onLogout();
@@ -35,7 +39,15 @@ export default function Dashboard({ token, onLogout }: { token: string; onLogout
 
   const load = useCallback(async () => {
     try {
-      setAlerts(await listAlerts(token, filters));
+      const list = await listAlerts(token, filters);
+      setAlerts(list);
+      const crit = list.filter((a) => a.severity === "critical" && a.status === "open");
+      const known = seen.current ?? new Set<number>();
+      const fresh = seen.current === null ? [] : crit.filter(
+        (a) => !known.has(a.id) && Date.now() - new Date(a.event_time).getTime() < 180000);
+      crit.forEach((a) => known.add(a.id));
+      seen.current = known;
+      if (fresh.length) setToasts((t) => [...fresh, ...t].slice(0, 4));
       setError("");
       setUpdated(new Date());
     } catch (err) {
@@ -79,6 +91,21 @@ export default function Dashboard({ token, onLogout }: { token: string; onLogout
 
   return (
     <main className="dash">
+      {toasts.length > 0 && (
+        <div className="toasts" aria-live="assertive">
+          {toasts.map((a) => (
+            <div key={a.id} className="toast" role="alert">
+              <strong>ALERTA CRÍTICA</strong>
+              <span>{a.rule} desde {a.src_ip}</span>
+              <span>{new Date(a.event_time).toLocaleTimeString()} · requiere revisión</span>
+              <div className="toast-actions">
+                <button onClick={() => { setIp(a.src_ip); dismiss(a.id); }}>Ver</button>
+                <button className="ghost" onClick={() => dismiss(a.id)}>Cerrar</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       <header>
         <h1>LogSentinel</h1>
         <div className="actions">
