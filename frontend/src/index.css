@@ -50,3 +50,12 @@ td.desc { max-width: 380px; overflow-wrap: anywhere; }
 @keyframes toast-in { from { transform: translateX(110%); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes toast-pulse { 50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.45); } }
 @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+
+.charts-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+@media (max-width: 800px) {
+  .charts-row { grid-template-columns: 1fr; }
+}

@@ -55,3 +55,9 @@ export function updateAlert(token: string, id: number, status: AlertStatus): Pro
     body: JSON.stringify({ status }),
   }, token);
 }
+
+export type Stats = components["schemas"]["StatsOut"];
+
+export function getStats(token: string) {
+  return request<Stats>("/stats", {}, token);
+}

@@ -3,14 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .database import Base, SessionLocal, engine, get_db
 from .models import Alert, Event, Source
 from .ratelimit import RateLimitMiddleware, client_ip, login_ip_limiter, login_user_limiter
 from .rules_engine import evaluate_event, seed_rules
-from .schemas import AlertOut, AlertUpdate, EventIn, LoginIn, TokenOut
+from .schemas import AlertOut, AlertUpdate, EventIn, LoginIn, StatsOut, TokenOut
 from .security import (
     authenticate,
     create_access_token,
@@ -121,3 +121,11 @@ def update_alert(alert_id: int, data: AlertUpdate, db: Session = Depends(get_db)
     db.commit()
     db.refresh(alert)
     return alert
+
+
+# ---------- Estadísticas (dashboard, con JWT) ----------
+
+@app.get("/stats", response_model=StatsOut, dependencies=[Depends(get_current_user)])
+def stats(db: Session = Depends(get_db)):
+    rows = db.execute(select(Event.source, func.count()).group_by(Event.source)).all()
+    return StatsOut(events_by_source={src: n for src, n in rows})
