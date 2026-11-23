@@ -17,7 +17,7 @@ dashboard. **Detecta, no bloquea.**
 - **API (FastAPI):** recibe eventos, los normaliza, aplica reglas y expone las alertas.
 - **Motor de reglas:** ventanas deslizantes por tiempo del evento, deduplicación por regla e IP,
   etiquetas MITRE ATT&CK y una regla de correlación entre fuentes.
-- **Dashboard (React + TypeScript):** alertas con filtros, gráfica por regla y actualización cada 5 s.
+- **Dashboard (React + TypeScript):** alertas con filtros, gráficas (por regla, por tiempo y eventos por fuente), aviso flotante para alertas críticas nuevas y actualización cada 5 s.
 - **Proxy (nginx):** termina TLS 1.2/1.3 y agrega cabeceras de seguridad. La API no está expuesta
   directamente; solo el proxy puede alcanzarla.
 - **Base de datos:** PostgreSQL 16.
@@ -96,6 +96,7 @@ Los agentes `agents/ssh_agent.py` y `agents/nginx_agent.py` leen un log y envía
 | `POST /auth/login` | Ninguna (con rate limiting) | Devuelve un JWT |
 | `GET /alerts` | `Bearer` JWT | Lista alertas (filtros: `status`, `severity`, `rule`, `src_ip`, `limit`, `offset`) |
 | `PATCH /alerts/{id}` | `Bearer` JWT | Cambia el estado de una alerta |
+| `GET /stats` | `Bearer` JWT | Eventos recibidos agrupados por fuente (`ssh`, `web`, `nginx`) |
 
 Documentación interactiva: <https://localhost:8444/docs>.
 
