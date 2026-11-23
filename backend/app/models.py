@@ -7,7 +7,7 @@ from .database import Base
 def now():
     return datetime.now(timezone.utc)
 
-# - sources: Almacena las fuentes de logs externas (agentes SSH, Nginx) y sus API keys hasheadas para autenticación[cite: 5].
+# - sources: Almacena las fuentes de logs externas (agentes SSH, Nginx) y sus API keys hasheadas para autenticación.
 class Source(Base):
     __tablename__ = "sources"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -16,7 +16,7 @@ class Source(Base):
     api_key_hash: Mapped[str] = mapped_column(String(128))
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
-# - events: Guarda cada evento de seguridad normalizado recibido de las fuentes, junto con sus metadatos, IPs y log original[cite: 3, 5].
+# - events: Guarda cada evento de seguridad normalizado recibido de las fuentes, junto con sus metadatos, IPs y log original.
 class Event(Base):
     __tablename__ = "events"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -33,7 +33,7 @@ class Event(Base):
 
     __table_args__ = (Index("ix_events_ip_time", "src_ip", "timestamp"),)
 
-# - rules: Define las reglas de detección de amenazas (umbrales de intentos, ventanas de tiempo, severidad y código MITRE ATT&CK)[cite: 4, 5].
+# - rules: Define las reglas de detección de amenazas (umbrales de intentos, ventanas de tiempo, severidad y código MITRE ATT&CK).
 class Rule(Base):
     __tablename__ = "rules"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -45,7 +45,7 @@ class Rule(Base):
     mitre: Mapped[str | None] = mapped_column(String(20))
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
 
-# - alerts: Almacena las alertas de seguridad generadas cuando el motor detecta un comportamiento anómalo o sospechoso[cite: 3, 4, 5].
+# - alerts: Almacena las alertas de seguridad generadas cuando el motor detecta un comportamiento anómalo o sospechoso.
 class Alert(Base):
     __tablename__ = "alerts"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -58,7 +58,7 @@ class Alert(Base):
     event_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
-# - users: Gestiona las cuentas y contraseñas (hasheadas) de los usuarios autorizados para iniciar sesión en el dashboard[cite: 5].
+# - users: Gestiona las cuentas y contraseñas (hasheadas) de los usuarios autorizados para iniciar sesión en el dashboard.
 class User(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True)

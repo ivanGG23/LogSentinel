@@ -47,3 +47,7 @@ class AlertOut(BaseModel):
 
 class AlertUpdate(BaseModel):
     status: Literal["open", "reviewed", "false_positive"]
+
+
+class StatsOut(BaseModel):
+    events_by_source: dict[str, int]

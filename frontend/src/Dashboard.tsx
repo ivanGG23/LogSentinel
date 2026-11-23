@@ -3,7 +3,7 @@ import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import {
-  ApiError, listAlerts, updateAlert,
+  ApiError, getStats, listAlerts, updateAlert,
   type Alert, type AlertStatus, type Filters,
 } from "./api/client";
 
@@ -27,6 +27,7 @@ export default function Dashboard({ token, onLogout }: { token: string; onLogout
   const [error, setError] = useState("");
   const [auto, setAuto] = useState(true);
   const [updated, setUpdated] = useState<Date | null>(null);
+  const [stats, setStats] = useState<Record<string, number>>({});
   // Avisos rojos para alertas críticas nuevas
   const seen = useRef<Set<number> | null>(null);
   const [toasts, setToasts] = useState<Alert[]>([]);
@@ -40,6 +41,7 @@ export default function Dashboard({ token, onLogout }: { token: string; onLogout
   const load = useCallback(async () => {
     try {
       const list = await listAlerts(token, filters);
+      getStats(token).then((r) => setStats(r.events_by_source)).catch(() => {});
       setAlerts(list);
       const crit = list.filter((a) => a.severity === "critical" && a.status === "open");
       const known = seen.current ?? new Set<number>();
@@ -82,6 +84,38 @@ export default function Dashboard({ token, onLogout }: { token: string; onLogout
     for (const a of shown) counts[a.severity] = (counts[a.severity] ?? 0) + 1;
     return counts;
   }, [shown]);
+
+  const byTime = useMemo(() => {
+    const times = shown
+      .map((a) => new Date(a.event_time).getTime())
+      .filter((t) => !Number.isNaN(t));
+    if (!times.length) return [];
+    const min = Math.min(...times);
+    const max = Math.max(...times);
+    const span = max - min;
+    const H = 3600_000;
+    const step = span <= 3 * H ? 10 * 60_000 : span <= 72 * H ? H : 24 * H;
+    const start = Math.floor(min / step) * step;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const label = (t: number) => {
+      const d = new Date(t);
+      const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const dm = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
+      return step >= 24 * H ? dm : step >= H ? `${dm} ${hm}` : hm;
+    };
+    const buckets = new Map<number, number>();
+    for (let t = start; t <= max; t += step) buckets.set(t, 0);
+    for (const t of times) {
+      const k = Math.floor(t / step) * step;
+      buckets.set(k, (buckets.get(k) ?? 0) + 1);
+    }
+    return [...buckets.entries()].map(([t, total]) => ({ time: label(t), total }));
+  }, [shown]);
+
+  const bySource = useMemo(
+    () => Object.entries(stats).map(([source, total]) => ({ source, total })),
+    [stats],
+  );
 
   const byRule = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -149,6 +183,33 @@ export default function Dashboard({ token, onLogout }: { token: string; onLogout
           </ResponsiveContainer>
         )}
       </section>
+
+      <div className="charts-row">
+        <section className="chart">
+          <h2>Alertas por tiempo</h2>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={byTime}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="time" />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Bar dataKey="total" name="Alertas" fill="#4f8ff7" />
+            </BarChart>
+          </ResponsiveContainer>
+        </section>
+        <section className="chart">
+          <h2>Eventos recibidos por fuente</h2>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={bySource}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="source" />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Bar dataKey="total" name="Eventos" fill="#8a6df0" />
+            </BarChart>
+          </ResponsiveContainer>
+        </section>
+      </div>
 
       <section className="filters">
         <select value={filters.status}
