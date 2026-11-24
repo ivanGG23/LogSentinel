@@ -87,6 +87,54 @@ Los archivos `agents/.env.*` están fuera de git (contienen API keys). Crea los 
 
 Los agentes `agents/ssh_agent.py` y `agents/nginx_agent.py` leen un log y envían sus eventos a la API.
 
+## Despliegue en Railway
+
+La instancia pública del proyecto corre en Railway:
+
+- Dashboard: <https://dashboard-production-eb685147.up.railway.app>
+- API y documentación: <https://logsentinel-production.up.railway.app/docs>
+
+El proyecto tiene tres servicios. Railway termina el HTTPS con un certificado válido, así que el proxy de `proxy/` solo se usa en local.
+
+| Servicio | Origen | Qué hace |
+|---|---|---|
+| `Postgres` | Plantilla de Railway | Base de datos (la API la alcanza por la red privada) |
+| `api` | `backend/` (Dockerfile) | API FastAPI y motor de reglas |
+| `dashboard` | `frontend/` (Dockerfile) | Compila React y lo sirve con nginx |
+
+Variables de entorno de cada servicio:
+
+```text
+# servicio api
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+JWT_SECRET=<openssl rand -hex 32>
+PORT=8000
+CORS_ORIGINS=https://<dominio-del-dashboard>
+
+# servicio dashboard
+VITE_API_URL=https://<dominio-de-la-api>   # se graba al compilar
+API_URL=https://<dominio-de-la-api>        # lo usa nginx en el CSP
+```
+
+Usuario y fuentes: en el servicio `api`, pestaña Console:
+
+```bash
+python -m app.create_user <usuario>
+python -m app.create_source <nombre> <ssh|web|nginx>
+```
+
+Enviar eventos a la instancia pública (los agentes corren en la máquina vigilada):
+
+```bash
+export API_URL=https://<dominio-de-la-api>
+export API_KEY=<clave-de-la-fuente>
+python3 agents/ssh_agent.py /var/log/auth.log --follow
+```
+
+No hace falta `SSL_CERT_FILE`: el certificado lo emite una autoridad pública.
+
+Nota: Railway ejecuta contenedores, así que el servicio no tiene `sshd` ni logs del sistema; los eventos llegan de los agentes que corren en otras máquinas. La instancia usa el plan de prueba de Railway y se detiene si se agota el crédito.
+
 ## API
 
 | Método y ruta | Autenticación | Función |
